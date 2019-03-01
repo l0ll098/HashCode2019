@@ -1,0 +1,33 @@
+{
+    "compileOnSave": false,
+    "compilerOptions": {
+        "module": "commonjs",
+        "outDir": "./dist",
+        "sourceMap": true,
+        "declaration": false,
+        "moduleResolution": "node",
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "removeComments": true,
+        "target": "es6",
+        "baseUrl": ".",
+        "typeRoots": [
+            "node_modules/@types"
+        ],
+        "lib": [
+            "es5",
+            "es6"
+        ],
+        "paths": {
+            "*": [
+                "node_modules/*",
+                "src/types/*"
+            ]
+        }
+    },
+    "exclude": [
+        "node_modules",
+        "client",
+        "tests/**/*"
+    ]
+}
