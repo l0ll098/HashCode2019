@@ -85,7 +85,7 @@ const graph = new Graph({
 		const p2 = photos[parseInt(e.w, 10)];
 
 		const _points = calcPoint(p1, p2);
-		return _points === 0 ? MAX_COMMON_TAGS + 1 : _points;
+		return _points === 0 ? MAX_COMMON_TAGS + MAX_COMMON_TAGS + 1 : MAX_COMMON_TAGS - _points;
 	});
 	console.log("Prim ended!");
 
