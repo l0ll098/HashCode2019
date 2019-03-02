@@ -10,7 +10,7 @@ export enum Files {
 	D = "d.txt",
 	E = "e.txt"
 }
-const curr = Files.B;
+const curr = Files.C;
 
 let count = 0;
 let lastV: Photo = null;
@@ -73,7 +73,6 @@ const graph = new Graph({
 		lastSlide = slide;
 
 	});
-	graph.setEdge(photos[photos.length - 1].i, photos[0].i);
 
 	console.log("All edges have been created!");
 
@@ -82,8 +81,8 @@ const graph = new Graph({
 
 	console.log("Prim...");
 	const prim = alg.prim(graph, (e) => {
-		const p1 = photos.find((p) => p.i === parseInt(e.v, 10));
-		const p2 = photos.find((p) => p.i === parseInt(e.w, 10));
+		const p1 = photos[parseInt(e.v, 10)];
+		const p2 = photos[parseInt(e.w, 10)];
 
 		const _points = calcPoint(p1, p2);
 		return _points === 0 ? MAX_COMMON_TAGS + 1 : _points;
