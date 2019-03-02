@@ -1,4 +1,6 @@
 import * as fs from "fs";
+import { Photo, Slide } from "./types";
+import { Graph, alg, json } from "@dagrejs/graphlib";
 
 export enum Files {
 	Example = "a.txt",
@@ -8,32 +10,22 @@ export enum Files {
 	D = "d.txt",
 	E = "e.txt"
 }
-const curr = Files.A;
-
-//#region Types
-export interface Photo {
-	i: number;
-	or: "H" | "V";
-	nTags: number;
-	tags: string[];
-}
-export interface Slide {
-	[i: number]: Photo;
-}
-//#endregion
+const curr = Files.B;
 
 let count = 0;
 let lastV: Photo = null;
 let out = "";
 let lastSlide: Slide = null;
-let points = 0;
 
 const slidePicked: boolean[] = [];
-let slideShow: Slide[] = [];
+const slideShow: Slide[] = [];
 let bestSlideShow: Slide[] = [];
-let bestPoints = 0;
-
 const ITERATIONS = 10;
+
+const MAX_COMMON_TAGS = 100;
+const graph = new Graph({
+	directed: false
+});
 
 
 (async () => {
@@ -47,80 +39,74 @@ const ITERATIONS = 10;
 
 	for (let i = 1; i <= n; ++i) {
 		const parts = input[i].split(" ");
-
-		photos.push({
+		const photo: Photo = {
 			i: i - 1,
 			or: parts[0].toUpperCase() === "H" ? "H" : "V",
 			nTags: parseInt(parts[1], 10),
 			tags: parts.slice(2, parts.length)
-		});
+		};
+
+		photos.push(photo);
+
+		// Add a new node
+		graph.setNode(photo.i);
 	}
 	//#endregion
 
-	for (let i = 0; i < ITERATIONS; i++) {
-		console.log("Iteration: ", i);
+	console.log("N = ", n);
+	console.log("Creating edges...");
 
-		points = 0;
-		slideShow = [];
-		count = 0;
-		lastV = null;
-		lastSlide = null;
+	photos.forEach((photo, index) => {
+		const slide = getSlide(photo);
 
+		// Add an edge between two nodes. (this is done for each node)
+		photos.forEach((p2) => {
+			if (photo.i !== p2.i) {
+				graph.setEdge(photo.i, p2.i);
+			}
+		});
 
-		for (let j = 0; j < n; j++) {
-			slidePicked[j] = false;
+		if (!slide) {
+			return;
 		}
 
-		for (let j = 0; j < n; j++) {
+		lastSlide = slide;
 
-			// Get an unpicked item
-			let randomIndex = Math.floor(Math.random() * n);
-			while (slidePicked[randomIndex]) {
-				randomIndex = Math.floor(Math.random() * n);
-			}
+	});
+	graph.setEdge(photos[photos.length - 1].i, photos[0].i);
 
-			// Mark that as picked
-			slidePicked[randomIndex] = true;
+	console.log("All edges have been created!");
 
+	// Path is an array of indexes (int) representing the shortest path
+	const path: number[] = [];
 
-			const slide = getSlide(photos[randomIndex]);
+	console.log("Prim...");
+	const prim = alg.prim(graph, (e) => {
+		const p1 = photos.find((p) => p.i === parseInt(e.v, 10));
+		const p2 = photos.find((p) => p.i === parseInt(e.w, 10));
 
+		const _points = calcPoint(p1, p2);
+		return _points === 0 ? MAX_COMMON_TAGS + 1 : _points;
+	});
+	console.log("Prim ended!");
 
-			if (!slide) {
-				continue;
-			}
+	console.log("Topological sort...");
+	const topSorted: string[] = alg.topsort(prim);
+	console.log("Topological sort ended!");
 
-			if (lastSlide != null) {
-				// calc points
-				if (lastSlide[0].or === "H") {
-					points += calcPoint(lastSlide[0], slide[0]);
-				}
+	// Reset count
+	count = 0;
 
-				if (lastSlide[0].or === "V") {
-					points += calcPoint(lastSlide[0], lastSlide[1]);
-					points += calcPoint(lastSlide[1], slide[0]);
-				}
-
-				if (slide[0].or === "V") {
-					points += calcPoint(slide[0], slide[1]);
-				}
-			}
-
-			lastSlide = slide;
-
-			// Add to the slideshow
+	console.log("Creating slideshow...");
+	topSorted.forEach((v) => {
+		const slide = getSlide(photos[parseInt(v, 10)]);
+		if (slide) {
 			slideShow.push(slide);
-
-
-			if (points >= bestPoints) {
-				bestPoints = points;
-				bestSlideShow = slideShow;
-
-				// console.log("Found a new best. New points: ", bestPoints);
-			}
 		}
-	}
+	});
+	bestSlideShow = slideShow;
 
+	// console.log(slideShow);
 
 	//#region Output
 
@@ -130,7 +116,6 @@ const ITERATIONS = 10;
 	});
 
 	out = count + "\n" + out;
-	console.log("Points: ", points);
 
 	fs.writeFileSync("./out/" + curr, out);
 
@@ -167,6 +152,11 @@ function slideOut(slide: Slide): void {
 
 
 function calcPoint(p1: Photo, p2: Photo) {
+	// console.log(p1, p2);
+	if (p1.or === "V" && p2.or === "V") {
+		return 0;
+	}
+
 	const commonTags = p1.tags.filter((value) => -1 !== p2.tags.indexOf(value)).length;
 	const p1NotP2 = p1.tags.filter((e) => !p2.tags.find((a) => e === a)).length;
 	const p2NotP1 = p2.tags.filter((e) => !p1.tags.find((a) => e === a)).length;
