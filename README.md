@@ -24,7 +24,7 @@ Each Photo is a vertex of that graph. Every vertex is connected with each other 
 | ----- | ----- |
 |   A   |   2   |
 |   B   |   -   |
-|   C   |  331  |
+|   C   |  922  |
 |   D   |   -   |
 |   E   |   -   |
 
